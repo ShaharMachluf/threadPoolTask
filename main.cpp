@@ -12,11 +12,44 @@ struct task{
     char* txt;
     int key;
     int index;
-}Task;
+};
 
 int writeIndex;
 std::queue<struct task> taskQ;
 std::queue<pthread_t*> threadQ;
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t taskCond;
+pthread_cond_t threadCond;
+
+void *worker(void* arg){
+    struct task currTask = *(struct task*)arg;
+    //todo: finish this function
+}
+
+
+//give jobs to the threads
+void *manage(void* arg){
+    struct task currTask;
+    pthread_t *currThread;
+    while(1){
+        pthread_mutex_lock(&lock);
+
+        while(taskQ.empty()){
+            pthread_cond_wait(&taskCond, &lock);
+        }
+        currTask = taskQ.front();
+        taskQ.pop();
+
+        while(threadQ.empty()){
+            pthread_cond_wait(&threadCond, &lock);//might need to be a different lock
+        }
+        currThread= threadQ.front();
+        threadQ.pop();
+        pthread_create(currThread, NULL, worker, (void*)&currTask);
+        
+        pthread_mutex_unlock(&lock);
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -31,7 +64,7 @@ int main(int argc, char *argv[])
 	    return 0;
 	}
 
-    for(int i=0; i<cores; i++){
+    for(int i=0; i<cores; i++){ //cores-2?
         threadQ.push(new pthread_t);
     }
 
@@ -41,10 +74,12 @@ int main(int argc, char *argv[])
 	char c;
 	int counter = 0;
 	int dest_size = 1024;
-	char data[dest_size]; 
-	
+	char data[dest_size];
+    pthread_t manager; 
 
-	while ((c = getchar()) != EOF)
+    pthread_create(&manager, NULL, manage, NULL);
+
+	while ((c = getchar()) != EOF) // todo:check how to read input
 	{
 	  data[counter] = c;
 	  counter++;
@@ -55,6 +90,7 @@ int main(int argc, char *argv[])
         t->key = key;
         t->txt = data;
         taskQ.push(*t);
+        pthread_cond_broadcast(&taskCond);
 		// encrypt(data,key);
 		// printf("encripted data: %s\n",data);
 		counter = 0;
@@ -72,6 +108,7 @@ int main(int argc, char *argv[])
         t->key = key;
         t->txt = data;
         taskQ.push(*t);
+        pthread_cond_broadcast(&taskCond);
 		// encrypt(lastData,key);
 		// printf("encripted data:\n %s\n",lastData);
         readIndex++;
