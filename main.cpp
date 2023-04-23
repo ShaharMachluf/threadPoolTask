@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 
 	  if (counter == 1024){
         struct task *t = (struct task*)malloc(sizeof(struct task));
-        t->txt = data;
+        t->index = readIndex;
         t->key = key;
         t->txt = data;//maybe it won't work
         taskQ.push(*t);
@@ -104,14 +104,13 @@ int main(int argc, char *argv[])
 		lastData[0] = '\0';
 		strncat(lastData, data, counter);
         struct task *t = (struct task*)malloc(sizeof(struct task));
-        t->txt = lastData;
+        t->index = readIndex;
         t->key = key;
-        t->txt = data;
+        t->txt = lastData;
         taskQ.push(*t);
         pthread_cond_broadcast(&taskCond);
 		// encrypt(lastData,key);
 		// printf("encripted data:\n %s\n",lastData);
-        readIndex++;
 	}
 
     for(int i=0; i<cores; i++){
