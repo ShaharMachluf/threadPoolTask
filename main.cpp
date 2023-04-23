@@ -46,7 +46,7 @@ void *manage(void* arg){
         currThread= threadQ.front();
         threadQ.pop();
         pthread_create(currThread, NULL, worker, (void*)&currTask);
-        
+
         pthread_mutex_unlock(&lock);
     }
 }
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         struct task *t = (struct task*)malloc(sizeof(struct task));
         t->txt = data;
         t->key = key;
-        t->txt = data;
+        t->txt = data;//maybe it won't work
         taskQ.push(*t);
         pthread_cond_broadcast(&taskCond);
 		// encrypt(data,key);
