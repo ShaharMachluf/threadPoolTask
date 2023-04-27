@@ -18,12 +18,20 @@ int writeIndex;
 std::queue<struct task> taskQ;
 std::queue<pthread_t*> threadQ;
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t lockWrite = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t taskCond;
 pthread_cond_t threadCond;
+pthread_cond_t writeCond;
 
 void *worker(void* arg){
     struct task currTask = *(struct task*)arg;
-    //todo: finish this function
+    //todo: add "if" to check if we need to enctypt or decrypt
+    encrypt(currTask.txt, currTask.key);
+    pthread_mutex_lock(&lockWrite);
+    while(writeIndex < currTask.index){
+        pthread_cond_wait(&writeCond, &lockWrite);
+    }
+    //todo: write to file
 }
 
 
