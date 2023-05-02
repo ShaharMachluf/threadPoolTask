@@ -34,10 +34,10 @@ void *worker(void* arg){
     // printf("worker\n");
     // fflush(stdout);
     struct task *currTask = (struct task*)arg;
-    printf("before encrypt: %s\n",currTask->txt);
-    fflush(stdout);
-    printf("before encrypt flag: %s\n",currTask->flag);
-    fflush(stdout);
+    // printf("before encrypt: %s\n",((struct task*)arg)->txt);
+    // fflush(stdout);
+    // printf("before encrypt flag: %s\n",currTask->flag);
+    // fflush(stdout);
     if(strcmp(currTask->flag, "-e") == 0){
         encrypt_func(currTask->txt, currTask->key);
     }else{
@@ -84,7 +84,8 @@ void *manage(void* arg){
         }
         // pthread_mutex_unlock(&lock);
         
-        // struct task currTask = taskQ.front();
+        struct task *currTask = (struct task*)malloc(sizeof(struct task));
+        *currTask = taskQ.front();
         // printf("struct index: %d\n", currTask.index);
         // fflush(stdout);
         // taskQ.pop();
@@ -97,8 +98,8 @@ void *manage(void* arg){
         // threadQ.pop();
         // printf("struct index again: %d\n", currTask.index);
         // pthread_t t;
-        printf("in manage: %s", taskQ.front().txt);
-        pthread_create(&threadQ.front(), NULL, worker, (void*)&taskQ.front());
+        // printf("in manage: %s", taskQ.front().txt);
+        pthread_create(&threadQ.front(), NULL, worker, (void*)currTask);
         threadQ.pop();
         taskQ.pop();
         // printf("struct index again: %d\n", currTask.index);
@@ -159,12 +160,12 @@ int main(int argc, char *argv[])
 	  if (counter == 1024){
         // data[1023] = '\0';
         struct task *t = (struct task*)malloc(sizeof(struct task));
-        // memset(t->txt, '\0', 1024);
+        memset(t->txt, '\0', 1024);
         // printf("read index: %d\n", readIndex);
         t->index = readIndex;
         t->key = key;
         strcpy(t->txt, data);
-        printf("data: %s\n", t->txt);
+        // printf("data: %s\n", t->txt);
         strcpy(t->flag, flag);
         taskQ.push(*t);
         pthread_cond_broadcast(&taskCond);
@@ -181,7 +182,7 @@ int main(int argc, char *argv[])
 		lastData[0] = '\0';
 		strncat(lastData, data, counter);
         struct task *t = (struct task*)malloc(sizeof(struct task));
-        // memset(t->txt, '\0', 1024);
+        memset(t->txt, '\0', 1024);
         t->index = readIndex;
         t->key = key;
         strcpy(t->txt, lastData);
