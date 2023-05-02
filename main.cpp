@@ -31,80 +31,42 @@ pthread_cond_t threadCond;
 pthread_cond_t writeCond;
 
 void *worker(void* arg){
-    // printf("worker\n");
-    // fflush(stdout);
     struct task *currTask = (struct task*)arg;
-    // printf("before encrypt: %s\n",((struct task*)arg)->txt);
-    // fflush(stdout);
-    // printf("before encrypt flag: %s\n",currTask->flag);
-    // fflush(stdout);
     if(strcmp(currTask->flag, "-e") == 0){
         encrypt_func(currTask->txt, currTask->key);
     }else{
         decrypt_func(currTask->txt, currTask->key);
     }
-    // printf("encrypt\n");
-    // fflush(stdout);
-    // printf("write index: %d\n", writeIndex);
-    // fflush(stdout);
-    // printf("task index: %d\n", currTask.index);
-    // fflush(stdout);
     pthread_mutex_lock(&lockWrite);
     while(writeIndex < currTask->index){
         pthread_cond_wait(&writeCond, &lockWrite);
     }
-    // printf("write\n");
-    // fflush(stdout);
     printf("%s", currTask->txt);
     fflush(stdout);
     writeIndex++;
     pthread_cond_broadcast(&writeCond);
     threadQ.push(pthread_self());
     pthread_cond_broadcast(&taskCond);
-    // free(&currTask);
     pthread_mutex_unlock(&lockWrite);
 }
 
 
 //give jobs to the threads
 void *manage(void* arg){
-    // struct task currTask;
-    // pthread_t currThread;
-    // printf("manage\n");
-    // fflush(stdout);
     while(1){
         pthread_mutex_lock(&lock3);
         pthread_mutex_lock(&lock);
-        
-        // printf("enter\n");
-        // fflush(stdout);
 
         while(taskQ.empty()||threadQ.empty()){
             pthread_cond_wait(&taskCond, &lock);
         }
-        // pthread_mutex_unlock(&lock);
         
         struct task *currTask = (struct task*)malloc(sizeof(struct task));
         *currTask = taskQ.front();
-        // printf("struct index: %d\n", currTask.index);
-        // fflush(stdout);
-        // taskQ.pop();
-
-        // while(threadQ.empty()){
-        //     pthread_mutex_lock(&lock2);
-        //     pthread_cond_wait(&threadCond, &lock2);
-        // }
-        // pthread_t currThread= threadQ.front();
-        // threadQ.pop();
-        // printf("struct index again: %d\n", currTask.index);
-        // pthread_t t;
-        // printf("in manage: %s", taskQ.front().txt);
         pthread_create(&threadQ.front(), NULL, worker, (void*)currTask);
         threadQ.pop();
         taskQ.pop();
-        // printf("struct index again: %d\n", currTask.index);
         pthread_mutex_unlock(&lock3);
-        // pthread_mutex_unlock(&lock2);
         pthread_mutex_unlock(&lock);
     }
 }
@@ -123,21 +85,12 @@ int main(int argc, char *argv[])
     encrypt_func = (void (*)(char *s, int key))dlsym(handle,"encrypt");
     decrypt_func = (void (*)(char *s, int key))dlsym(handle,"decrypt");
 
-	// if (argc != 3)
-	// {
-	//     printf("usage: key < file \n");
-	//     printf("!! data more than 1024 char will be ignored !!\n");
-	//     return 0;
-	// }
-
-    for(int i=0; i<cores; i++){ //cores-2?
+    for(int i=0; i<cores; i++){ 
         pthread_t curr_t;
         threadQ.push(curr_t);
     }
 
 	int key = atoi(argv[1]);
-	// printf("key is %i \n",key);
-    // fflush(stdout);
     char flag[2];
     strcpy(flag, argv[2]);
 
@@ -150,27 +103,20 @@ int main(int argc, char *argv[])
 	int dest_size = 1024;
 	char data[dest_size];
 
-    // printf("111\n");
-
 	while ((c = getchar()) != EOF) 
 	{
 	  data[counter] = c;
 	  counter++;
 
 	  if (counter == 1024){
-        // data[1023] = '\0';
         struct task *t = (struct task*)malloc(sizeof(struct task));
         memset(t->txt, '\0', 1024);
-        // printf("read index: %d\n", readIndex);
         t->index = readIndex;
         t->key = key;
         strcpy(t->txt, data);
-        // printf("data: %s\n", t->txt);
         strcpy(t->flag, flag);
         taskQ.push(*t);
         pthread_cond_broadcast(&taskCond);
-		// encrypt(data,key);
-		// printf("encripted data: %s\n",data);
 		counter = 0;
         readIndex++;
 	  }
@@ -189,15 +135,7 @@ int main(int argc, char *argv[])
         strcpy(t->flag, flag);
         taskQ.push(*t);
         pthread_cond_broadcast(&taskCond);
-		// encrypt(lastData,key);
-		// printf("encripted data:\n %s\n",lastData);
 	}
-
-    // for(int i=0; i<cores; i++){
-    //     pthread_t* curr = threadQ.front();
-    //     threadQ.pop();
-    //     delete(curr);
-    // }
     while(1){
         continue;
     }
