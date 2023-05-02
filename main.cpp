@@ -13,7 +13,7 @@ void (*encrypt_func)(char *s, int key);
 void (*decrypt_func)(char *s, int key);
 
 struct task{
-    char txt[1025];
+    char txt[1024];
     char flag[2];
     int key;
     int index;
@@ -31,32 +31,37 @@ pthread_cond_t threadCond;
 pthread_cond_t writeCond;
 
 void *worker(void* arg){
-    printf("worker\n");
+    // printf("worker\n");
+    // fflush(stdout);
+    struct task *currTask = (struct task*)arg;
+    printf("before encrypt: %s\n",currTask->txt);
     fflush(stdout);
-    struct task currTask = *(struct task*)arg;
-    if(strcmp(currTask.flag, "-e") == 0){
-        encrypt_func(currTask.txt, currTask.key);
+    printf("before encrypt flag: %s\n",currTask->flag);
+    fflush(stdout);
+    if(strcmp(currTask->flag, "-e") == 0){
+        encrypt_func(currTask->txt, currTask->key);
     }else{
-        decrypt_func(currTask.txt, currTask.key);
+        decrypt_func(currTask->txt, currTask->key);
     }
-    printf("encrypt\n");
-    fflush(stdout);
-    printf("write index: %d\n", writeIndex);
-    fflush(stdout);
-    printf("task index: %d\n", currTask.index);
-    fflush(stdout);
+    // printf("encrypt\n");
+    // fflush(stdout);
+    // printf("write index: %d\n", writeIndex);
+    // fflush(stdout);
+    // printf("task index: %d\n", currTask.index);
+    // fflush(stdout);
     pthread_mutex_lock(&lockWrite);
-    while(writeIndex < currTask.index){
+    while(writeIndex < currTask->index){
         pthread_cond_wait(&writeCond, &lockWrite);
     }
-    printf("write\n");
-    fflush(stdout);
-    printf("%s", currTask.txt);
+    // printf("write\n");
+    // fflush(stdout);
+    printf("%s", currTask->txt);
     fflush(stdout);
     writeIndex++;
     pthread_cond_broadcast(&writeCond);
     threadQ.push(pthread_self());
-    pthread_cond_broadcast(&threadCond);
+    pthread_cond_broadcast(&taskCond);
+    // free(&currTask);
     pthread_mutex_unlock(&lockWrite);
 }
 
@@ -65,38 +70,41 @@ void *worker(void* arg){
 void *manage(void* arg){
     // struct task currTask;
     // pthread_t currThread;
-    printf("manage\n");
-    fflush(stdout);
+    // printf("manage\n");
+    // fflush(stdout);
     while(1){
-        // pthread_mutex_lock(&lock3);
+        pthread_mutex_lock(&lock3);
+        pthread_mutex_lock(&lock);
         
-        printf("enter\n");
-        fflush(stdout);
+        // printf("enter\n");
+        // fflush(stdout);
 
-        while(taskQ.empty()){
-            pthread_mutex_lock(&lock);
+        while(taskQ.empty()||threadQ.empty()){
             pthread_cond_wait(&taskCond, &lock);
         }
         // pthread_mutex_unlock(&lock);
         
-        struct task currTask = taskQ.front();
-        printf("struct index: %d\n", currTask.index);
-        fflush(stdout);
-        taskQ.pop();
+        // struct task currTask = taskQ.front();
+        // printf("struct index: %d\n", currTask.index);
+        // fflush(stdout);
+        // taskQ.pop();
 
-        while(threadQ.empty()){
-            pthread_mutex_lock(&lock2);
-            pthread_cond_wait(&threadCond, &lock2);
-        }
+        // while(threadQ.empty()){
+        //     pthread_mutex_lock(&lock2);
+        //     pthread_cond_wait(&threadCond, &lock2);
+        // }
         // pthread_t currThread= threadQ.front();
         // threadQ.pop();
         // printf("struct index again: %d\n", currTask.index);
-        pthread_create(&threadQ.front(), NULL, worker, (void*)&currTask);
+        // pthread_t t;
+        printf("in manage: %s", taskQ.front().txt);
+        pthread_create(&threadQ.front(), NULL, worker, (void*)&taskQ.front());
         threadQ.pop();
-        printf("struct index again: %d\n", currTask.index);
-        // pthread_mutex_unlock(&lock3);
+        taskQ.pop();
+        // printf("struct index again: %d\n", currTask.index);
+        pthread_mutex_unlock(&lock3);
         // pthread_mutex_unlock(&lock2);
-        // pthread_mutex_unlock(&lock);
+        pthread_mutex_unlock(&lock);
     }
 }
 
@@ -127,8 +135,8 @@ int main(int argc, char *argv[])
     }
 
 	int key = atoi(argv[1]);
-	printf("key is %i \n",key);
-    fflush(stdout);
+	// printf("key is %i \n",key);
+    // fflush(stdout);
     char flag[2];
     strcpy(flag, argv[2]);
 
@@ -138,7 +146,7 @@ int main(int argc, char *argv[])
 
 	char c;
 	int counter = 0;
-	int dest_size = 1025;
+	int dest_size = 1024;
 	char data[dest_size];
 
     // printf("111\n");
@@ -149,13 +157,14 @@ int main(int argc, char *argv[])
 	  counter++;
 
 	  if (counter == 1024){
-        data[1024] = '\0';
+        // data[1023] = '\0';
         struct task *t = (struct task*)malloc(sizeof(struct task));
-        memset(t->txt, '\0', 1025);
-        printf("read index: %d\n", readIndex);
+        // memset(t->txt, '\0', 1024);
+        // printf("read index: %d\n", readIndex);
         t->index = readIndex;
         t->key = key;
         strcpy(t->txt, data);
+        printf("data: %s\n", t->txt);
         strcpy(t->flag, flag);
         taskQ.push(*t);
         pthread_cond_broadcast(&taskCond);
@@ -172,7 +181,7 @@ int main(int argc, char *argv[])
 		lastData[0] = '\0';
 		strncat(lastData, data, counter);
         struct task *t = (struct task*)malloc(sizeof(struct task));
-        memset(t->txt, '\0', 1025);
+        // memset(t->txt, '\0', 1024);
         t->index = readIndex;
         t->key = key;
         strcpy(t->txt, lastData);

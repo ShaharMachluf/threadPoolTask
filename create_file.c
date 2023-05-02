@@ -1,26 +1,25 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 int main() {
-    int text[1000]; // declare a character array to hold the text to write
-    int i;
-    FILE *fp; // declare a file pointer
-    fp = fopen("output.txt", "w"); // open the file in write mode
+    srand(time(NULL)); // seed the random number generator
 
-    if (fp == NULL) { // check if file opening was successful
-        printf("Error opening file.");
+    // open a file for writing
+    FILE* fp = fopen("letters.txt", "w");
+    if (fp == NULL) {
+        printf("Failed to open file.\n");
         return 1;
     }
 
-    // fill the text array with 1025 characters
-    for (i = 0; i < 1000; i++) {
-        text[i] = i; // fill the array with the character 'a'
+    // write 100 random letters to the file
+    for (int i = 0; i < 2000; i++) {
+        char c = 'a' + (rand() % 26); // generate a random letter
+        fprintf(fp, "%c", c); // write the letter to the file
     }
 
-    // write the text array to the file
-    for(int i=0; i<1000; i++){
-        fprintf(fp, "%d ", text[i]);
-    }
+    // close the file
+    fclose(fp);
 
-    fclose(fp); // close the file
     return 0;
 }
